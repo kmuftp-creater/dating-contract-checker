@@ -1,0 +1,1 @@
+ALTER TABLE "ip_status" ADD COLUMN "off_topic_count" integer DEFAULT 0 NOT NULL;

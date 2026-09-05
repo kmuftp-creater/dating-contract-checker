@@ -1,0 +1,41 @@
+﻿# 交友合約健檢（公開版）。
+# 使用方式：複製 .env.example 為 .env 並填好，然後 docker compose up -d
+services:
+  app:
+    build: .
+    image: dating-contract-checker:latest
+    container_name: dating-contract-checker-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      UPLOAD_DIR: /data/uploads
+      DATABASE_URL: postgres://contract:${POSTGRES_PASSWORD}@postgres:5432/contract_check
+    ports:
+      - '127.0.0.1:3400:3400'
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: dating-contract-checker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: contract
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: contract_check
+      TZ: Asia/Taipei
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U contract -d contract_check']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  uploads:

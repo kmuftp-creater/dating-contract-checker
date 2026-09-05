@@ -1,0 +1,230 @@
+@import 'tailwindcss';
+
+/*
+ * 設計系統。
+ *
+ * 色盤取自營運者指定的兩個參考站台，暖紙感的中性色系
+ * 的暖紙色系，而非 02-DESIGN 預設的冷灰藍。理由不只是好看：這個工具的內容
+ * 就是法規條文與合約，紙張質感的底色比冷色調更貼近閱讀文件的情境，長時間
+ * 逐條核對也比純白刺眼的版面舒服。
+ *
+ * 四個判定狀態各自有明確色相，彼此不會混淆：
+ *   符合 綠、不符合 紅、建議修正 琥珀、不適用 灰。
+ * 主色刻意選了偏深的藍綠，與「不符合」的紅拉開距離——使用者最需要一眼分辨
+ * 的就是「這是可以點的東西」還是「這條違規了」。
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* 主色與互動 */
+  --color-brand: #2c5f7c;
+  --color-brand-hover: #234c63;
+
+  /* 紙張質感的底色層次 */
+  --color-canvas: #f5f3ef;
+  --color-surface: #fffdf9;
+  --color-ink: #232323;
+  --color-ink-muted: #686868;
+  --color-hairline: #d9d4cc;
+
+  /* 判定狀態 */
+  --color-ok: #2f7d5d;
+  --color-danger: #b3392f;
+  --color-warn: #b5791f;
+  --color-info: #4a6fa5;
+
+  /* 圓角：按鈕與輸入框 8px，卡片 12px */
+  --radius-control: 8px;
+  --radius-card: 12px;
+
+  --font-sans:
+    'Inter', 'Noto Sans TC', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', 'Microsoft JhengHei', sans-serif;
+
+  /*
+   * 字級整體放大一級（2026-09-05 User 反映字太小）。
+   *
+   * 中文字沒有英文的小寫字母，同樣的 px 值看起來就是比英文小一號，
+   * 而畫面上大量使用 text-sm 與 text-xs 的資訊列，用預設值會偏吃力。
+   * 這裡改的是 Tailwind 的尺標本身，所有既有的 text-sm／text-xs
+   * 都會跟著變大，不必逐頁去改類別。
+   */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.6;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.7;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.8;
+}
+
+/*
+ * 暗色模式只覆寫語意色，元件不必各自處理。
+ * 底色用暖灰（#262321）而不是純黑，與亮色模式的紙張感一致。
+ */
+.dark {
+  --color-brand: #7fb3d5;
+  --color-brand-hover: #9ac6e4;
+
+  --color-canvas: #262321;
+  --color-surface: #302c29;
+  --color-ink: #f2eee7;
+  --color-ink-muted: #c9c0b8;
+  --color-hairline: #57504b;
+
+  --color-ok: #7fb394;
+  --color-danger: #ef8377;
+  --color-warn: #e0b060;
+  --color-info: #a7b1c3;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    /* 內文 17px：中文在同樣 px 值下的視覺大小比英文小一號 */
+    font-size: 17px;
+    line-height: 1.8;
+  }
+
+  /* 中文字型的字重在細體時可讀性差，統一提高最低字重 */
+  strong,
+  th {
+    font-weight: 600;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  /*
+   * 長字串（網址、檔名）在窄螢幕會把版面撐破。
+   * 這裡只處理斷行，不改變一般中文的排版行為。
+   */
+  a,
+  td,
+  th,
+  li,
+  p {
+    overflow-wrap: break-word;
+  }
+}
+
+@layer components {
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-card);
+    box-shadow: 0 1px 2px rgb(35 35 35 / 0.04);
+  }
+
+  .dark .card {
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.24);
+  }
+
+  /*
+   * 主要動作按鈕。頁面上同時有很多可點的東西時，用它標出「主要那一個」。
+   */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: var(--radius-control);
+    background-color: var(--color-brand);
+    padding: 0.625rem 1rem;
+    font-weight: 500;
+    color: #ffffff;
+    transition: background-color 150ms;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-brand-hover);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .dark .btn-primary {
+    color: #1b1917;
+  }
+
+  /* 次要動作：有邊框、無填色。 */
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-control);
+    background-color: var(--color-surface);
+    padding: 0.625rem 1rem;
+    font-weight: 500;
+    color: var(--color-ink);
+    transition: border-color 150ms;
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+  }
+}
+
+/*
+ * 列印樣式（「下載 PDF」走瀏覽器原生列印，見 report-actions.tsx 的說明）。
+ *
+ * 只在 @media print 生效，不影響一般畫面：拿掉頁首頁尾與所有按鈕／篩選
+ * 控制項，讓「展開／收合」的長文字（.result-clamp，見
+ * expandable-text.tsx）強制完整展開，避免查核項目在分頁間被腰斬，並改成
+ * 白底黑字省墨。用 :root 覆寫色票變數，讓沿用色票的既有元件不必各自加
+ * print 樣式；這段附加在檔案最後，不動既有規則。
+ */
+@media print {
+  :root {
+    --color-canvas: #ffffff;
+    --color-surface: #ffffff;
+    --color-ink: #000000;
+    --color-ink-muted: #333333;
+    --color-hairline: #999999;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  header,
+  footer,
+  button,
+  .print-hide {
+    display: none !important;
+  }
+
+  .result-clamp {
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+    -webkit-line-clamp: unset !important;
+  }
+
+  .card,
+  tr {
+    break-inside: avoid;
+  }
+
+  a {
+    color: #000000 !important;
+    text-decoration: none !important;
+  }
+}
