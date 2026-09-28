@@ -65,6 +65,33 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+
+  /**
+   * 幫不該被索引的區塊加上 `X-Robots-Tag` 回應標頭。
+   *
+   * 這是 `robots.txt` 與各頁 `<meta name="robots">` 之外的第三道防線：
+   * 標頭連只看回應標頭、不解析 HTML 內容的工具都擋得住，也不受頁面是否
+   * 為伺服器元件（能不能匯出 metadata）影響，`/api/*` 這種完全不輸出
+   * HTML 的路由也一樣能蓋到。
+   *
+   * `/admincenter/:path*` 與 `/history/:path*` 這兩條路徑規則本身已經
+   * 涵蓋「不含子路徑」的裸路徑（path-to-regexp 的 `*` 修飾字代表零次或
+   * 多次），但這裡刻意仍然各自加一條精確比對的規則：不依賴這個隱含行為，
+   * 讀這份設定的人也能一眼確認裸路徑真的有被蓋到，不必去查 path-to-regexp
+   * 的比對細節。
+   */
+  async headers() {
+    const noindex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
+
+    return [
+      { source: '/admincenter', headers: noindex },
+      { source: '/admincenter/:path*', headers: noindex },
+      { source: '/history', headers: noindex },
+      { source: '/history/:path*', headers: noindex },
+      { source: '/report', headers: noindex },
+      { source: '/api/:path*', headers: noindex },
+    ];
+  },
 };
 
 export default nextConfig;

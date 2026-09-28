@@ -170,6 +170,37 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
       return response;
     }
+
+    // 內容確實與交友媒合有關，但只有附件、沒有契約正本。
+    //
+    // 這種情況不算濫用，是使用者少傳了檔案，所以**不累計非目標文件次數**，
+    // 只退還配額並說明要補什麼。硬跑下去會產出一整排假的「不符合」——
+    // 查核表的應記載事項幾乎都寫在正本裡，附件本來就不會有。
+    // 那份報告看起來像結論，卻是錯的，比不給報告更糟。
+    if (relevance.isTargetContract && !relevance.hasMainContract && relevance.confidence === 'high') {
+      await refundQuota(
+        [
+          { type: 'client', value: clientId },
+          { type: 'ip', value: ip },
+        ],
+        fileCount,
+      );
+
+      const label = relevance.documentType.trim() || '附件或確認書';
+      const response = errorResponse(
+        'missing_main_contract',
+        `這次只收到「${label}」，沒有交友媒合服務契約的正本。` +
+          '查核表的應記載事項大多寫在正本裡，只用附件比對會得到一整排並不成立的「不符合」，' +
+          '所以這次不進行分析，也沒有計入您的每日次數。' +
+          '請把契約正本與所有附件一次選取後再送出，分析模式維持「合併為一份合約」。' +
+          '若您手上真的只有這一份文件，請改用「問題回報」告訴我們，我們會協助確認。',
+        422,
+      );
+      if (isNew) {
+        setClientCookie(response, clientId);
+      }
+      return response;
+    }
   }
 
   const analysisIds: string[] = [];

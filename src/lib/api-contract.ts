@@ -52,6 +52,7 @@ export type ApiErrorCode =
   | 'too_many_files'
   /** 偵測到上傳內容不是交友媒合服務契約（2026-09-05 需求）。 */
   | 'off_topic_document'
+  | 'missing_main_contract'
   /** 請求內容有誤。 */
   | 'bad_request'
   /** 找不到指定資源。 */

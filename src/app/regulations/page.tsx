@@ -1,23 +1,46 @@
+import type { Metadata } from 'next';
 import { ArrowLeft, Download, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
+import { JsonLd } from '@/components/json-ld';
 import { MarkdownView } from '@/components/markdown-view';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { getPublishedPair } from '@/lib/documents';
 import { DOCUMENT_DESCRIPTIONS, DOCUMENT_LABELS } from '@/lib/document-labels';
+import { SITE_NAME, buildPageMetadata, getSiteUrl } from '@/lib/site';
 import type { DocumentKind } from '@/lib/types';
-
-export const metadata = { title: '法規文件' };
 
 /**
  * 這一頁的內容來自資料庫，管理員在後台發布新版後應立即反映。
  *
  * 不加這一行的話 Next.js 會在建置時就把它靜態產生：部署後看到的永遠是
  * 建置當下的快照，管理員更新法規也不會變；而且建置階段會去連資料庫，
- * 在沒有資料庫的環境（例如容器建置）直接失敗。
+ * 在沒有資料庫的環境（例如容器建置）直接失敗。這同時也保證了下方
+ * `generateMetadata` 裡的 `getSiteUrl()` 一定在執行期才求值。
  */
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: '法規文件',
+    description:
+      '查看目前生效的「交友媒合服務定型化契約查核表」與「交友媒合服務定型化契約應記載及不得記載事項」全文，本工具的檢核判斷皆以此為準。',
+    path: '/regulations',
+  });
+}
+
+/**
+ * JSON-LD 用的官方文件名稱。
+ *
+ * 這裡刻意不沿用 `DOCUMENT_LABELS`（那份是介面上用的簡稱，例如「查核表」
+ * 「公告全文」），結構化資料要給搜尋引擎與 AI 看的是官方公告上的完整
+ * 名稱，兩者的使用情境不同，不應該共用同一份常數。
+ */
+const OFFICIAL_DOCUMENT_NAMES: Record<'checklist' | 'regulation', string> = {
+  checklist: '交友媒合服務定型化契約查核表',
+  regulation: '交友媒合服務定型化契約應記載及不得記載事項',
+};
 
 function formatDate(date: Date | null): string {
   if (!date) return '尚未發布';
@@ -26,13 +49,59 @@ function formatDate(date: Date | null): string {
 
 export default async function RegulationsPage() {
   const { checklist, regulation } = await getPublishedPair();
-  const sections: { kind: DocumentKind; document: typeof checklist }[] = [
+  const sections: { kind: Extract<DocumentKind, 'checklist' | 'regulation'>; document: typeof checklist }[] = [
     { kind: 'checklist', document: checklist },
     { kind: 'regulation', document: regulation },
   ];
 
+  const siteUrl = getSiteUrl();
+  const pageUrl = `${siteUrl}/regulations`;
+
+  // dateModified 取兩份文件生效日較新的那一個；都沒有生效版本時省略這個欄位。
+  const publishedDates = [checklist?.publishedAt, regulation?.publishedAt].filter(
+    (value): value is Date => value != null,
+  );
+  const dateModified =
+    publishedDates.length > 0
+      ? new Date(Math.max(...publishedDates.map((date) => date.getTime()))).toISOString()
+      : undefined;
+
+  // 沒有生效版本的文件不輸出：hasPart 只列出目前確實生效的那幾份。
+  const hasPart = sections
+    .filter(({ document }) => document !== null)
+    .map(({ kind, document }) => ({
+      '@type': 'DigitalDocument',
+      name: OFFICIAL_DOCUMENT_NAMES[kind],
+      version: String(document!.version),
+      datePublished: document!.publishedAt ? document!.publishedAt.toISOString() : undefined,
+      ...(document!.sourceUrl ? { isBasedOn: document!.sourceUrl } : {}),
+    }));
+
+  const webPageJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: '法規文件',
+    description:
+      '目前生效的「交友媒合服務定型化契約查核表」與「交友媒合服務定型化契約應記載及不得記載事項」全文。',
+    url: pageUrl,
+    inLanguage: 'zh-Hant-TW',
+    ...(dateModified ? { dateModified } : {}),
+    ...(hasPart.length > 0 ? { hasPart } : {}),
+  };
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: SITE_NAME, item: siteUrl },
+      { '@type': 'ListItem', position: 2, name: '法規文件', item: pageUrl },
+    ],
+  };
+
   return (
     <div className="flex min-h-dvh flex-col">
+      <JsonLd data={webPageJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-8 px-4 py-8 sm:py-10">

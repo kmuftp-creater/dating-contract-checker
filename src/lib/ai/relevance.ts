@@ -48,6 +48,16 @@ export interface CheckRelevanceInput {
 export interface RelevanceCheckResult {
   /** 是否判定為交友媒合服務契約。 */
   isTargetContract: boolean;
+  /**
+   * 這次上傳的內容裡是否包含**契約正本**。
+   *
+   * 為什麼要跟 `isTargetContract` 分開：交友契約常常拆成好幾份文件，
+   * 例如「服務合約書」加上「消費借貸告知確認書」。單獨上傳附件時，
+   * 它確實與交友媒合有關（`isTargetContract` 為 true），但查核表的
+   * 應記載事項幾乎都寫在正本裡，只拿附件去比對會得到一整排假的「不符合」——
+   * 那份報告比不給報告更糟，因為它看起來像結論。
+   */
+  hasMainContract: boolean;
   /** 判斷的把握程度；判斷不出來一律為 low。 */
   confidence: 'high' | 'low';
   /** 系統看起來收到的是什麼文件，供錯誤訊息顯示，判斷不出來可為空字串。 */
@@ -58,7 +68,7 @@ export interface RelevanceCheckResult {
 
 /** 呼叫失敗或判斷不出來時的保守結果：一律視為目標契約（放行），confidence 為 low。 */
 function fallbackAllowResult(reason: string): RelevanceCheckResult {
-  return { isTargetContract: true, confidence: 'low', documentType: '', reason };
+  return { isTargetContract: true, hasMainContract: true, confidence: 'low', documentType: '', reason };
 }
 
 const HEAD_CHARS = 1200;
@@ -88,10 +98,11 @@ const RELEVANCE_SYSTEM_PROMPT = `你是文件分類員，只負責判斷使用�
 1. 只依看得到的內容判斷，不要臆測看不到的部分。
 2. 只有在內容明顯屬於其他類型文件（例如發票、履歷、租賃契約、一般商品買賣契約、與交友媒合完全無關的文章或圖片）時，才把 isTargetContract 設為 false，並把 confidence 設為 high。
 3. 內容模糊、片段不完整、看起來像契約但特徵不足以確定、或者根本無法判讀（例如影像模糊、文字亂碼）時，一律把 confidence 設為 low，這種情況即使覺得不像也不能設 confidence 為 high——判斷不出來就是 low，不是「傾向不是」。
-4. documentType 用一個簡短詞語描述你看到的文件類型（例如「租賃契約」「發票」「交友媒合服務契約」），看不出來就填「無法判斷」。
-5. reason 限一句話。
-6. 只輸出一個 JSON 物件，不要輸出 JSON 以外的任何文字或說明，格式固定如下：
-{"isTargetContract": true 或 false, "confidence": "high" 或 "low", "documentType": "文件類型", "reason": "一句話理由"}`;
+4. hasMainContract 表示這次的內容裡**有沒有契約正本**。交友契約常拆成好幾份文件，例如「服務合約書」加上「消費借貸告知確認書」「附件」「告知同意書」。只看到附件或確認書、沒有看到訂定服務內容與雙方權利義務的本文時，把 hasMainContract 設為 false，confidence 設為 high。看到本文、或不確定，一律設為 true。
+5. documentType 用一個簡短詞語描述你看到的文件類型（例如「租賃契約」「發票」「交友媒合服務契約」「消費借貸告知確認書」），看不出來就填「無法判斷」。
+6. reason 限一句話。
+7. 只輸出一個 JSON 物件，不要輸出 JSON 以外的任何文字或說明，格式固定如下：
+{"isTargetContract": true 或 false, "hasMainContract": true 或 false, "confidence": "high" 或 "low", "documentType": "文件類型", "reason": "一句話理由"}`;
 
 function buildRelevanceMessages(sampleText: string, image: ExtractedImage | null): ChatMessage[] {
   const parts: ChatContentPart[] = [];
@@ -126,6 +137,8 @@ function parseRelevanceResult(content: string): RelevanceCheckResult {
   const confidence = json.confidence === 'high' ? 'high' : 'low';
   return {
     isTargetContract: json.isTargetContract,
+    // 沒給或給錯型別時一律當成「有正本」，維持放行的保守方向。
+    hasMainContract: json.hasMainContract === false ? false : true,
     confidence,
     documentType: typeof json.documentType === 'string' ? json.documentType : '',
     reason: typeof json.reason === 'string' ? json.reason : '',

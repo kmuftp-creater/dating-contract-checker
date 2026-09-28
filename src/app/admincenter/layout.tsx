@@ -5,7 +5,11 @@ import { SiteFooter } from '@/components/site-footer';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { EXTRA_ADMIN_NAV } from '@/lib/email/hooks';
 
-export const metadata = { title: { default: '後台', template: '%s ｜ 後台' } };
+export const metadata = {
+  title: { default: '後台', template: '%s ｜ 後台' },
+  // 後台一律不給搜尋引擎索引，登入頁也在裡面，不該被收錄。
+  robots: { index: false, follow: false },
+};
 
 /** 後台導覽的核心項目。這份部署額外掛了什麼，由 `EXTRA_ADMIN_NAV` 提供。 */
 const NAV = [

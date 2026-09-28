@@ -52,6 +52,20 @@ export function UsageGuide() {
         兩份文件的實際內容可在「法規文件」頁查看，官方版本請以官方網站為準。
       </p>
 
+      {/*
+        適用範圍放在最前面而不是塞進下方的注意事項清單：拿舊合約來檢核會得到
+        一份用錯標準的報告，那比沒有報告更糟，所以必須在使用者上傳之前就看到。
+      */}
+      <div className="mt-4 rounded-(--radius-control) border-2 border-warn/50 bg-warn/10 p-4">
+        <p className="text-sm font-semibold text-ink">適用範圍</p>
+        <p className="mt-1.5 text-sm leading-relaxed text-ink">
+          本工具僅檢核
+          <strong>115 年 9 月 1 日（含）以後簽訂</strong>的交友合約。
+          在那之前簽訂的合約，仍應依照<strong>當時有效的法規標準</strong>辦理，
+          用本工具得到的結果不適用於那些合約。
+        </p>
+      </div>
+
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         {STEPS.map((step) => (
           <div key={step.title} className="rounded-(--radius-control) border border-hairline p-4">
@@ -106,6 +120,12 @@ export function UsageGuide() {
           <li>
             照片拍得太模糊、PDF 是掃描檔而字跡不清時，可能有條文沒被讀到。
             報告上方若出現提醒文字，請一併確認。
+          </li>
+          <li>
+            本工具檢核的是
+            <strong className="text-ink">115 年 9 月 1 日（含）以後簽訂的交友合約</strong>。
+            在那之前簽訂的合約，仍應按照當時有效的法規標準辦理，
+            用本工具檢核的結果不適用於那些合約。
           </li>
           <li>法規會修訂。報告會標示當時依據的版本，舊報告不代表最新規定。</li>
           <li>

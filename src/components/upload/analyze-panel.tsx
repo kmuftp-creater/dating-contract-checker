@@ -39,6 +39,8 @@ export interface AnalyzePanelProps {
    * 用獨立的警示區塊顯示，不與 `submitError` 共用同一行小字。
    */
   offTopicMessage: string | null;
+  /** 警示的種類，決定標題與色調。 */
+  offTopicKind: 'off-topic' | 'incomplete';
 }
 
 export function AnalyzePanel({
@@ -53,6 +55,7 @@ export function AnalyzePanel({
   blockedMessage,
   submitError,
   offTopicMessage,
+  offTopicKind,
 }: AnalyzePanelProps) {
   const overLimit = maxPastedTextChars !== null && pastedText.length > maxPastedTextChars;
 
@@ -106,10 +109,25 @@ export function AnalyzePanel({
       </div>
 
       {offTopicMessage && (
-        <div className="flex gap-3 rounded-(--radius-control) border-2 border-warn bg-warn/10 p-4 text-sm text-ink">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warn" aria-hidden />
+        <div
+          className={`flex gap-3 rounded-(--radius-control) border-2 p-4 text-sm text-ink ${
+            offTopicKind === 'incomplete' ? 'border-info bg-info/10' : 'border-warn bg-warn/10'
+          }`}
+        >
+          <AlertTriangle
+            className={`mt-0.5 size-5 shrink-0 ${
+              offTopicKind === 'incomplete' ? 'text-info' : 'text-warn'
+            }`}
+            aria-hidden
+          />
           <div>
-            <p className="font-semibold text-warn">偵測到非目標文件</p>
+            <p
+              className={`font-semibold ${
+                offTopicKind === 'incomplete' ? 'text-info' : 'text-warn'
+              }`}
+            >
+              {offTopicKind === 'incomplete' ? '還缺契約正本' : '偵測到非目標文件'}
+            </p>
             <p className="mt-1">{offTopicMessage}</p>
           </div>
         </div>

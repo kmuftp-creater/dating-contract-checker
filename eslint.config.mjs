@@ -25,6 +25,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // 公開版替身檔範本，理由同 tsconfig.json 的 exclude。
     "scripts/public-edition/**",
+    // 產圖腳本是獨立執行的 Node 程式，用 CommonJS 直接 node 跑，
+    // 不經過專案的模組系統，不適用這裡的 ESM 規則。
+    "scripts/*.js",
   ]),
 ]);
 
