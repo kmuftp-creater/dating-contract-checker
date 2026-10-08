@@ -20,6 +20,7 @@ export const dynamic = 'force-dynamic';
 const PAGE_LABELS: Record<(typeof PUBLIC_PATHS)[number], string> = {
   '/': '首頁',
   '/regulations': '法規文件',
+  '/faq': '常見問題',
   '/terms': '服務條款',
   '/privacy': '隱私權政策',
 };
@@ -27,6 +28,7 @@ const PAGE_LABELS: Record<(typeof PUBLIC_PATHS)[number], string> = {
 const PAGE_DESCRIPTIONS: Record<(typeof PUBLIC_PATHS)[number], string> = {
   '/': '上傳或貼上交友媒合服務契約內容，取得逐條檢核報告，免費、不需註冊。',
   '/regulations': '目前生效的「交友媒合服務定型化契約查核表」與「交友媒合服務定型化契約應記載及不得記載事項」全文。',
+  '/faq': '交友媒合服務契約的審閱期、退費、手續費與違約金上限、入會費、履約保障等九個常見問題，每題附條文出處。',
   '/terms': '本服務的使用範圍與責任限制。',
   '/privacy': '上傳的合約內容與個人資料會被如何蒐集、使用、保留與刪除。',
 };

@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch {
     // 資料庫讀不到時不能讓 sitemap 回 500：攔下錯誤，省略 lastModified，
-    // 照常輸出四個公開頁的網址。
+    // 照常輸出五個公開頁的網址。
   }
 
   // 首頁刻意不給 lastModified：它的內容是操作介面本身，不是會定期更新的

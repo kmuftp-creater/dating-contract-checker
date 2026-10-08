@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 
 import { HomeClient } from '@/components/home-client';
 import { JsonLd } from '@/components/json-ld';
-import { FAQ_ITEMS } from '@/lib/faq';
 import { SITE_DESCRIPTION, SITE_NAME, buildPageMetadata, getOperatorName, getSiteUrl } from '@/lib/site';
 
 /**
@@ -66,23 +65,9 @@ export default function HomePage() {
       : {}),
   };
 
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQ_ITEMS.map((item) => ({
-      '@type': 'Question',
-      name: item.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: item.answer,
-      },
-    })),
-  };
-
   return (
     <>
       <JsonLd data={webApplicationJsonLd} />
-      <JsonLd data={faqJsonLd} />
       <HomeClient />
     </>
   );

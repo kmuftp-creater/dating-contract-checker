@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { href: '/', label: '分析' },
   { href: '/history', label: '歷史紀錄' },
   { href: '/regulations', label: '法規文件' },
+  { href: '/faq', label: '常見問題' },
   { href: '/report', label: '問題回報' },
 ];
 

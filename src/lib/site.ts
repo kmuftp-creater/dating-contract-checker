@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 
 /**
  * 網站層級的常數與 metadata 輔助函式，供 SEO／AEO／GEO 相關檔案共用：
- * 根 layout、四個公開頁的 metadata、`robots.ts`、`sitemap.ts`、
+ * 根 layout、五個公開頁的 metadata、`robots.ts`、`sitemap.ts`、
  * `llms.txt`、JSON-LD 都從這裡取值，避免站名、說明文字、網址組法
  * 分散在各檔案各寫一份、改一個地方忘了改另一個。
  *
@@ -29,7 +29,7 @@ export const SITE_DESCRIPTION =
  * `src/app/robots.ts`、`next.config.ts` 的 `headers()`，以及各自頁面的
  * `robots` metadata。
  */
-export const PUBLIC_PATHS = ['/', '/regulations', '/terms', '/privacy'] as const;
+export const PUBLIC_PATHS = ['/', '/regulations', '/faq', '/terms', '/privacy'] as const;
 
 export type PublicPath = (typeof PUBLIC_PATHS)[number];
 

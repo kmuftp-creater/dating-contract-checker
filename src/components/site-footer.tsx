@@ -49,6 +49,9 @@ export function SiteFooter() {
             <Link href="/regulations" className="transition-colors hover:text-brand">
               法規文件
             </Link>
+            <Link href="/faq" className="transition-colors hover:text-brand">
+              常見問題
+            </Link>
             <Link href="/report" className="transition-colors hover:text-brand">
               問題回報
             </Link>
