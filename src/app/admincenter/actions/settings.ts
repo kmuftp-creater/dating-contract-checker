@@ -284,7 +284,7 @@ export async function testGatewayGenerationAction(
       messages: [{ role: 'user', content: [{ type: 'text', text: TEST_GENERATION_PROMPT }] }],
       // 設定裡沒填時退回中性字串；寫死作者的代號會讓公開版帶著作者的識別跑。
       clientId: current.costClientId || 'dating-contract-checker',
-      feature: 'admin_test_generation',
+      feature: 'admin-test-generation',
       timeoutMs: 20000,
     });
     return { ok: true, latencyMs: Date.now() - start, reply: result.content, error: '' };

@@ -33,7 +33,7 @@ export interface RelevanceGatewayConfig {
   model: string;
   /** 成本歸戶：metadata.client_id。 */
   clientId: string;
-  /** 成本歸戶：metadata.feature，固定使用 `relevance_check`，與正式分析的 `analyze` 區分開。 */
+  /** 成本歸戶：metadata.feature，固定使用 `relevance-check`，與正式分析的 `analyze` 區分開。 */
   feature: string;
 }
 

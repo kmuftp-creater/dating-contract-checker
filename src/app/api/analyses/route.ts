@@ -145,7 +145,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         apiKey: aiSettings.apiKey,
         model: aiSettings.primaryModel,
         clientId: aiSettings.costClientId,
-        feature: 'relevance_check',
+        feature: 'relevance-check',
       },
     });
 

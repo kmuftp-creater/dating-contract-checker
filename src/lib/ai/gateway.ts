@@ -88,6 +88,22 @@ function tagValue(value: string): string {
 }
 
 /**
+ * 功能名只允許小寫英數與連字號，底線一律換成連字號。
+ *
+ * 2026-10-23 晚 AI CostScale 更新命名規則：`feature:` 不用底線、不加專案
+ * 前綴。每筆請求本來就知道是哪把金鑰打的；加了前綴，同一件事（例如各
+ * 軟體的 `admin-connection-test`）在「依 feature 加總」會被拆成好幾組。
+ * `client_id` 不套這條：它與 GCP 帳單標籤同值，原本的底線寫法保留。
+ */
+function featureTag(feature: string): string {
+  return feature
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+/**
  * 組出閘道的成本歸戶標頭 `x-litellm-tags`。
  *
  * 2026-10-23 AI CostScale 交辦：請求內容的 `metadata.client_id`／`feature`
@@ -95,27 +111,7 @@ function tagValue(value: string): string {
  * 標頭與 `metadata` 兩邊的值必須相同，所以從同一組參數組出來，不另外傳。
  */
 function costTagsHeader(clientId: string, feature: string): string {
-  return `feature:${tagValue(feature)},client_id:${tagValue(clientId)}`;
-}
-
-/**
- * 功能名前面加上軟體代號，例如代號為 `abc` 時，`analyze` 變成 `abc_analyze`。
- *
- * 儀表板的「依 feature 加總」是跨軟體合併的：`analyze` 這種通用名稱
- * 其他軟體也可能用，混在一起就看不出是哪支軟體的花費。戀愛手冊的
- * `luv_chat`、`luv_tool` 是同一個做法。
- *
- * 後台測試連線也一樣加前綴（`abc_admin-connection-test`，2026-10-23
- * User 指示）：各軟體的測試呼叫若共用同一個名稱，在加總表裡會併成一列，
- * 分不出是哪支軟體在測試。
- *
- * 前綴取自成本歸戶代號，不寫死在程式碼裡：公開版的部署者有自己的代號，
- * 寫死作者的代號會讓公開版帶著作者的識別跑。
- */
-function qualifiedFeature(clientId: string, feature: string): string {
-  const prefix = `${tagValue(clientId)}_`;
-  const name = tagValue(feature);
-  return name.startsWith(prefix) ? name : prefix + name;
+  return `feature:${feature},client_id:${tagValue(clientId)}`;
 }
 
 /**
@@ -128,7 +124,7 @@ export async function callGateway(options: CallGatewayOptions): Promise<CallGate
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const url = `${trimTrailingSlash(options.baseUrl)}/v1/chat/completions`;
   // metadata 與標頭用同一個值，兩邊不同會在閘道記帳裡對不起來。
-  const feature = qualifiedFeature(options.clientId, options.feature);
+  const feature = featureTag(options.feature);
 
   const body: Record<string, unknown> = {
     model: options.model,
@@ -336,7 +332,7 @@ export async function testGroqKeys(
  *
  * `clientId` 傳設定裡的成本歸戶代號：閘道靠金鑰就知道是哪支軟體，但儀表板
  * 依 `client_id` 標籤分組時，測試呼叫若帶別的值就會自成一組，看起來像另一支
- * 軟體。功能名為 `admin-connection-test`，送出時加上軟體前綴，讓測試不混進
+ * 軟體。功能名用閘道方規定的共通名稱 `admin-connection-test`，讓測試不混進
 正式功能的花費。
  */
 export async function testConnection(

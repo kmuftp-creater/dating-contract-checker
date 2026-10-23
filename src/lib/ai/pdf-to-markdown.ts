@@ -143,7 +143,7 @@ export async function convertPdfToMarkdownDraft(
     model: options.gateway.model,
     messages,
     clientId: options.clientId,
-    feature: 'pdf_to_markdown_draft',
+    feature: 'pdf-to-markdown-draft',
   });
 
   const markdown = extractMarkdownFromResponse(result.content);
