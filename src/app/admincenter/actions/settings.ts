@@ -389,7 +389,13 @@ export async function diagnoseGatewayAction(
     return { ok: false, latencyMs: 0, egressIp: await egressIpPromise, error: '尚未設定閘道網址或金鑰，無法診斷。' };
   }
 
-  const [connection, egressIp] = await Promise.all([testConnection(gatewayUrl, apiKey, model), egressIpPromise]);
+  // 成本歸戶代號取自設定，不寫死：公開版的部署者有自己的代號，寫死作者的
+  // 代號會讓公開版帶著作者的識別跑。
+  const clientId = current.costClientId || 'dating-contract-checker';
+  const [connection, egressIp] = await Promise.all([
+    testConnection(gatewayUrl, apiKey, model, clientId),
+    egressIpPromise,
+  ]);
   return { ok: connection.ok, latencyMs: connection.latencyMs, egressIp, error: connection.error };
 }
 

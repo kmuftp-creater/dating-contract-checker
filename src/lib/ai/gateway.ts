@@ -76,6 +76,49 @@ function errorMessage(error: unknown): string {
 }
 
 /**
+ * 把成本歸戶的值整理成閘道標籤允許的字元：小寫英數、減號、底線。
+ *
+ * 標籤會原樣存進閘道的記帳、顯示在儀表板上，而且不會被清掉；標頭又以
+ * 逗號分隔多個標籤，值裡若混進逗號或空白，整列標籤都會被切壞。這裡的
+ * 輸入都是程式裡的常數，正常情況下不會改到什麼，但多一層保護比靠人記
+ * 得命名規則可靠。
+ */
+function tagValue(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+}
+
+/**
+ * 組出閘道的成本歸戶標頭 `x-litellm-tags`。
+ *
+ * 2026-10-23 AI CostScale 交辦：請求內容的 `metadata.client_id`／`feature`
+ * 閘道記不到「這筆是哪個功能打的」，儀表板的「請求紀錄」頁只認標籤。
+ * 標頭與 `metadata` 兩邊的值必須相同，所以從同一組參數組出來，不另外傳。
+ */
+function costTagsHeader(clientId: string, feature: string): string {
+  return `feature:${tagValue(feature)},client_id:${tagValue(clientId)}`;
+}
+
+/**
+ * 功能名前面加上軟體代號，例如代號為 `abc` 時，`analyze` 變成 `abc_analyze`。
+ *
+ * 儀表板的「依 feature 加總」是跨軟體合併的：`analyze` 這種通用名稱
+ * 其他軟體也可能用，混在一起就看不出是哪支軟體的花費。戀愛手冊的
+ * `luv_chat`、`luv_tool` 是同一個做法。
+ *
+ * 後台測試連線也一樣加前綴（`abc_admin-connection-test`，2026-10-23
+ * User 指示）：各軟體的測試呼叫若共用同一個名稱，在加總表裡會併成一列，
+ * 分不出是哪支軟體在測試。
+ *
+ * 前綴取自成本歸戶代號，不寫死在程式碼裡：公開版的部署者有自己的代號，
+ * 寫死作者的代號會讓公開版帶著作者的識別跑。
+ */
+function qualifiedFeature(clientId: string, feature: string): string {
+  const prefix = `${tagValue(clientId)}_`;
+  const name = tagValue(feature);
+  return name.startsWith(prefix) ? name : prefix + name;
+}
+
+/**
  * 呼叫閘道的 `/v1/chat/completions`，要求模型以 JSON 物件格式回覆。
  *
  * 錯誤處理：HTTP 非 2xx 拋出含狀態碼與回應內文前 300 字的中文錯誤；逾時與
@@ -84,6 +127,8 @@ function errorMessage(error: unknown): string {
 export async function callGateway(options: CallGatewayOptions): Promise<CallGatewayResult> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const url = `${trimTrailingSlash(options.baseUrl)}/v1/chat/completions`;
+  // metadata 與標頭用同一個值，兩邊不同會在閘道記帳裡對不起來。
+  const feature = qualifiedFeature(options.clientId, options.feature);
 
   const body: Record<string, unknown> = {
     model: options.model,
@@ -91,7 +136,7 @@ export async function callGateway(options: CallGatewayOptions): Promise<CallGate
     response_format: { type: 'json_object' },
     metadata: {
       client_id: options.clientId,
-      feature: options.feature,
+      feature,
     },
   };
   if (options.maxOutputTokens !== undefined) {
@@ -105,6 +150,7 @@ export async function callGateway(options: CallGatewayOptions): Promise<CallGate
       headers: {
         Authorization: `Bearer ${options.apiKey}`,
         'Content-Type': 'application/json',
+        'x-litellm-tags': costTagsHeader(options.clientId, feature),
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
@@ -285,11 +331,19 @@ export async function testGroqKeys(
   return results;
 }
 
-/** 後台「測試連線」按鈕用：送一句簡短提示，回傳是否成功、延遲與回覆內容。 */
+/**
+ * 後台「測試連線」按鈕用：送一句簡短提示，回傳是否成功、延遲與回覆內容。
+ *
+ * `clientId` 傳設定裡的成本歸戶代號：閘道靠金鑰就知道是哪支軟體，但儀表板
+ * 依 `client_id` 標籤分組時，測試呼叫若帶別的值就會自成一組，看起來像另一支
+ * 軟體。功能名為 `admin-connection-test`，送出時加上軟體前綴，讓測試不混進
+正式功能的花費。
+ */
 export async function testConnection(
   baseUrl: string,
   apiKey: string,
   model: string,
+  clientId: string,
 ): Promise<TestConnectionResult> {
   const start = Date.now();
   try {
@@ -303,10 +357,8 @@ export async function testConnection(
           content: [{ type: 'text', text: '請只回傳 JSON：{"reply": "測試成功"}' }],
         },
       ],
-      // 連線測試不做成本歸戶，用固定的中性字串即可；寫死作者的代號會讓
-      // 公開版帶著作者的識別跑，也讓稽核者搜不乾淨。
-      clientId: 'connection-test',
-      feature: 'test_connection',
+      clientId,
+      feature: 'admin-connection-test',
       timeoutMs: 15000,
     });
     return { ok: true, latencyMs: Date.now() - start, reply: result.content, error: '' };
